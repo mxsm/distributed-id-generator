@@ -9,6 +9,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<modules>
 		<module>generator-mysql</module>
+		<module>generator-redis</module>
 	</modules>
 	<name>distributed-id-generator</name>
 	<description>distributed id generator project for Spring Boot</description>
