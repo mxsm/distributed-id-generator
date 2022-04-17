@@ -11,7 +11,8 @@
 		<module>generator-mysql</module>
 		<module>generator-redis</module>
         <module>generator-snowflake</module>
-    </modules>
+		<module>mxsm-uidgenerator</module>
+	</modules>
 	<name>distributed-id-generator</name>
 	<description>distributed id generator project for Spring Boot</description>
 	<properties>
@@ -64,6 +65,13 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

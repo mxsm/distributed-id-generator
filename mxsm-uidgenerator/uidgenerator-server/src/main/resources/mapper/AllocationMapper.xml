@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.github.mxsm.uid.dao.AllocationDao">
+    <insert id="insertAllocation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO mxsm_allocation (biz_code, max_id, step, create_time, update_time)
+        VALUES (#{alloc.bizCode}, #{alloc.maxId}, #{alloc.step}, now(), now())
+    </insert>
+
+    <select id="getAllocation" resultType="com.github.mxsm.uid.entity.AllocationEntity">
+        SELECT id, max_id, step
+        FROM mxsm_allocation
+        WHERE biz_code = #{bizCode}
+    </select>
+</mapper>
