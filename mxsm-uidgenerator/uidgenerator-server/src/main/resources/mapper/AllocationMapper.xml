@@ -2,14 +2,19 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.github.mxsm.uid.dao.AllocationDao">
+
     <insert id="insertAllocation" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO mxsm_allocation (biz_code, max_id, step, create_time, update_time)
         VALUES (#{alloc.bizCode}, #{alloc.maxId}, #{alloc.step}, now(), now())
     </insert>
 
+    <update id="updateAllocation">
+        UPDATE mxsm_allocation SET max_id = max_id + step * #{stepLength} WHERE  biz_code = #{bizCode}
+    </update>
+
     <select id="getAllocation" resultType="com.github.mxsm.uid.entity.AllocationEntity">
-        SELECT id, max_id, step
+        SELECT id, max_id as maxId, step
         FROM mxsm_allocation
-        WHERE biz_code = #{bizCode}
+        WHERE biz_code = #{bizCode} FOR UPDATE
     </select>
 </mapper>

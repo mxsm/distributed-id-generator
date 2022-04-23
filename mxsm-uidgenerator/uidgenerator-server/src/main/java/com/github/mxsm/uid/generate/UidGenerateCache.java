@@ -1,7 +1,7 @@
 package com.github.mxsm.uid.generate;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -13,6 +13,26 @@ import java.util.function.Supplier;
  */
 public class UidGenerateCache {
 
+    private Map<String, SegmentPanel> caches = new ConcurrentHashMap<>();
 
+    private Lock lock = new ReentrantLock();
+
+    public long getUidFromCacheOrElse(String bizCode, Supplier<SegmentPanel> supplier){
+
+        SegmentPanel segmentPanel = caches.get(bizCode);
+        if(segmentPanel == null){
+            try {
+                lock.lock();
+                segmentPanel = caches.get(bizCode);
+                if(segmentPanel == null){
+                    segmentPanel = supplier.get();
+                    caches.put(bizCode, segmentPanel);
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+        return segmentPanel.getUid();
+    }
 
 }

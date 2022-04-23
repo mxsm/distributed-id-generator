@@ -10,39 +10,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author mxsm
- * @date 2022/4/17 16:28
+ * @date 2022/4/23 21:45
  * @Since 1.0.0
  */
-@Service("uidGenerator")
-public class UidGenerator {
+@Service("segmentConsumerListenerImpl")
+public class SegmentConsumerListenerImpl implements SegmentConsumerListener{
 
     @Autowired
     private AllocationDao allocationDao;
 
-    private UidGenerateCache uidGenerateCache = new UidGenerateCache();
-
-    @Autowired
-    private SegmentConsumerListener listener;
-
-    @Transactional(rollbackFor = Exception.class)
-    public String getUid(String bizCode){
-        long uid = uidGenerateCache.getUidFromCacheOrElse(bizCode, () -> createSegmentPanel(bizCode, 10));
-        return String.valueOf(uid);
-    }
-
-
-    private SegmentPanel createSegmentPanel(String bizCode, int stepSize){
-
+    @Override
+    @Transactional
+    public void listener(SegmentPanel segmentPanel, int segmentSize) {
+        String bizCode = segmentPanel.getBizCode();
         AllocationEntity allocation = allocationDao.getAllocation(bizCode);
-        allocationDao.updateAllocation(stepSize, bizCode);
+        allocationDao.updateAllocation(segmentSize, bizCode);
         Long startUid = allocation.getMaxId();
         Integer stepLength = allocation.getStep();
         List<Segment> segments = new ArrayList<>();
-        for(int index = 0; index < stepSize; ++ index){
+        for(int index = 0; index < segmentSize; ++ index){
             Segment segment = new Segment(startUid + stepLength * index, stepLength);
             segments.add(segment);
         }
-        return new SegmentPanel(bizCode,stepSize,segments,listener);
+        segmentPanel.addSegment(segments);
     }
-
 }

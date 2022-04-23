@@ -14,4 +14,5 @@ public interface AllocationDao {
 
     void insertAllocation(@Param("alloc") AllocationEntity alloc);
 
+    void updateAllocation(@Param("stepLength") int stepLength, @Param("bizCode") String bizCode);
 }
