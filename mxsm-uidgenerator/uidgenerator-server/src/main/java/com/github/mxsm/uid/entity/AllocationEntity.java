@@ -13,9 +13,9 @@ public class AllocationEntity {
 
     private String bizCode;
 
-    private Long maxId = 1L;
+    private Long maxId;
 
-    private Integer step = 1;
+    private Integer step;
 
     private String description;
 
