@@ -1,14 +1,10 @@
 package com.github.mxsm.uid.controller;
 
-import com.github.javafaker.Faker;
 import com.github.mxsm.uid.core.common.Result;
 import com.github.mxsm.uid.core.segment.Segment;
 import com.github.mxsm.uid.service.UidGenerateService;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import jdk.jfr.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

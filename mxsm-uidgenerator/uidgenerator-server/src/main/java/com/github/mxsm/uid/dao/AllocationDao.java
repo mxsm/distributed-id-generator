@@ -1,7 +1,6 @@
 package com.github.mxsm.uid.dao;
 
 import com.github.mxsm.uid.entity.AllocationEntity;
-import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 /**

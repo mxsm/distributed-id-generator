@@ -1,7 +1,5 @@
 package com.github.mxsm;
 
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 
 /**
