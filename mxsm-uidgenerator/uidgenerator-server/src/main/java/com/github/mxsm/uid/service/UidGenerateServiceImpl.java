@@ -1,8 +1,8 @@
 package com.github.mxsm.uid.service;
 
-import com.github.mxsm.uid.core.UidGenerateService;
-import com.github.mxsm.uid.generate.UidGenerator;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.github.mxsm.uid.core.segment.Segment;
+import com.github.mxsm.uid.generate.UidGeneratorServer;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
@@ -13,27 +13,39 @@ import org.springframework.stereotype.Service;
 @Service("uidGenerateService")
 public class UidGenerateServiceImpl implements UidGenerateService {
 
-    @Autowired
-    private UidGenerator uidGenerator;
+    private UidGeneratorServer uidGenerator;
+
+    private AllocationService allocationService;
+
+    public UidGenerateServiceImpl(UidGeneratorServer uidGenerator, AllocationService allocationService) {
+        this.uidGenerator = uidGenerator;
+        this.allocationService = allocationService;
+    }
 
     /**
      * @param bizCode
      * @return
      */
     @Override
-    public String getUid(String bizCode) {
-        return uidGenerator.getUid(bizCode);
+    public long getUID(String bizCode) {
+        return uidGenerator.getUID(bizCode);
     }
 
     /**
      * get step of number steps
      *
      * @param bizCode
-     * @param stepNums
+     * @param segmentNum
      * @return
      */
     @Override
-    public long getStep(String bizCode, int stepNums) {
-        return 0;
+    public List<Segment> getSegments(String bizCode, int segmentNum) {
+        return allocationService.getSegments(bizCode, segmentNum);
     }
+
+    @Override
+    public boolean registerBizCode(String bizCode, int step) {
+        return allocationService.registerBizCode(bizCode,step);
+    }
+
 }

@@ -4,12 +4,37 @@
 <mapper namespace="com.github.mxsm.uid.dao.AllocationDao">
 
     <insert id="insertAllocation" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO mxsm_allocation (biz_code, max_id, step, create_time, update_time)
-        VALUES (#{alloc.bizCode}, #{alloc.maxId}, #{alloc.step}, now(), now())
+        INSERT INTO mxsm_allocation (biz_code,
+        <if test="alloc.maxId != null">
+            max_id,
+        </if>
+        step, create_time, update_time)
+        VALUES (#{alloc.bizCode},
+        <if test="alloc.maxId != null">
+            #{alloc.maxId},
+        </if>
+        #{alloc.step}, now(), now())
+    </insert>
+    <insert id="insertAllocationBatch">
+        INSERT INTO mxsm_allocation (biz_code,
+        <if test="alloc.maxId != null">
+            max_id,
+        </if>
+        step, create_time, update_time)
+        VALUES
+        <foreach collection ="allocs" item="alloc" index= "index" separator =",">
+            (#{alloc.bizCode},
+            <if test="alloc.maxId != null">
+                #{alloc.maxId},
+            </if>
+            #{alloc.step}, now(), now())
+        </foreach>
     </insert>
 
     <update id="updateAllocation">
-        UPDATE mxsm_allocation SET max_id = max_id + step * #{stepLength} WHERE  biz_code = #{bizCode}
+        UPDATE mxsm_allocation
+        SET max_id = max_id + step * #{stepLength}
+        WHERE biz_code = #{bizCode}
     </update>
 
     <select id="getAllocation" resultType="com.github.mxsm.uid.entity.AllocationEntity">

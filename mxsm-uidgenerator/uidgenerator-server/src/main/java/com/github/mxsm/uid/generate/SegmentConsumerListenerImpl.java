@@ -1,12 +1,12 @@
 package com.github.mxsm.uid.generate;
 
-import com.github.mxsm.uid.dao.AllocationDao;
-import com.github.mxsm.uid.entity.AllocationEntity;
-import java.util.ArrayList;
+import com.github.mxsm.uid.core.segment.Segment;
+import com.github.mxsm.uid.core.segment.SegmentConsumerListener;
+import com.github.mxsm.uid.core.segment.SegmentPanel;
+import com.github.mxsm.uid.service.AllocationService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author mxsm
@@ -14,24 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
  * @Since 1.0.0
  */
 @Service("segmentConsumerListenerImpl")
-public class SegmentConsumerListenerImpl implements SegmentConsumerListener{
+public class SegmentConsumerListenerImpl implements SegmentConsumerListener {
 
     @Autowired
-    private AllocationDao allocationDao;
+    private AllocationService allocationService;
 
     @Override
-    @Transactional
-    public void listener(SegmentPanel segmentPanel, int segmentSize) {
+    public void listener(SegmentPanel segmentPanel, int segmentNum) {
         String bizCode = segmentPanel.getBizCode();
-        AllocationEntity allocation = allocationDao.getAllocation(bizCode);
-        allocationDao.updateAllocation(segmentSize, bizCode);
-        Long startUid = allocation.getMaxId();
-        Integer stepLength = allocation.getStep();
-        List<Segment> segments = new ArrayList<>();
-        for(int index = 0; index < segmentSize; ++ index){
-            Segment segment = new Segment(startUid + stepLength * index, stepLength);
-            segments.add(segment);
-        }
+        List<Segment> segments = allocationService.getSegments(bizCode, segmentNum);
         segmentPanel.addSegment(segments);
+        segmentPanel.resetCounter();
     }
 }

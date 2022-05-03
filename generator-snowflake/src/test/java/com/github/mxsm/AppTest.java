@@ -15,6 +15,7 @@ public class AppTest
     @Test
     public void shouldAnswerWithTrue()
     {
-        assertTrue( true );
+        System.out.println(~(-1L << 12));
+        System.out.println(1L << 12);
     }
 }

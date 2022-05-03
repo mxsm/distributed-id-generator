@@ -1,4 +1,4 @@
-package com.github.mxsm.uid.generate;
+package com.github.mxsm.uid.core.segment;
 
 /**
  * @author mxsm

@@ -1,17 +1,17 @@
-package com.github.mxsm.uid.exception;
+package com.github.mxsm.uid.core.exception;
 
 /**
  * @author mxsm
- * @date 2022/4/22 21:15
+ * @date 2022/5/1 15:55
  * @Since 1.0.0
  */
-public class SegmentOutOfBoundaryException extends RuntimeException{
+public class UidGenerateException extends  RuntimeException{
 
     /**
      * Constructs a new runtime exception with {@code null} as its detail message.  The cause is not initialized, and may
      * subsequently be initialized by a call to {@link #initCause}.
      */
-    public SegmentOutOfBoundaryException() {
+    public UidGenerateException() {
     }
 
     /**
@@ -21,7 +21,7 @@ public class SegmentOutOfBoundaryException extends RuntimeException{
      * @param message the detail message. The detail message is saved for later retrieval by the {@link #getMessage()}
      *                method.
      */
-    public SegmentOutOfBoundaryException(String message) {
+    public UidGenerateException(String message) {
         super(message);
     }
 
@@ -34,7 +34,7 @@ public class SegmentOutOfBoundaryException extends RuntimeException{
      *                value is permitted, and indicates that the cause is nonexistent or unknown.)
      * @since 1.4
      */
-    public SegmentOutOfBoundaryException(String message, Throwable cause) {
+    public UidGenerateException(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -47,7 +47,7 @@ public class SegmentOutOfBoundaryException extends RuntimeException{
      *              is permitted, and indicates that the cause is nonexistent or unknown.)
      * @since 1.4
      */
-    public SegmentOutOfBoundaryException(Throwable cause) {
+    public UidGenerateException(Throwable cause) {
         super(cause);
     }
 
@@ -62,7 +62,7 @@ public class SegmentOutOfBoundaryException extends RuntimeException{
      * @param writableStackTrace whether or not the stack trace should be writable
      * @since 1.7
      */
-    public SegmentOutOfBoundaryException(String message, Throwable cause, boolean enableSuppression,
+    public UidGenerateException(String message, Throwable cause, boolean enableSuppression,
         boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }

@@ -44,9 +44,21 @@ public class Result<T> {
             '}';
     }
 
-    public Result<T> buildSuccess(T data){
-        setStatus(Status.SUCCESS);
-        setData(data);
-        return this;
+    public static <T> Result<T> buildSuccess(T data) {
+
+        Result<T> result = new Result<>();
+        result.setStatus(Status.SUCCESS);
+        result.setData(data);
+
+        return result;
+    }
+
+    public static <T> Result<T> buildError(T data) {
+
+        Result<T> result = new Result<>();
+        result.setStatus(Status.EXCEPTION);
+        result.setData(data);
+
+        return result;
     }
 }

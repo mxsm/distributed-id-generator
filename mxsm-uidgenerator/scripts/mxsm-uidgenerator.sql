@@ -12,7 +12,7 @@ CREATE TABLE `mxsm_allocation` (
 
 CREATE TABLE `mxsm_snowfalke_node` (
  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
- `host_name` int NOT NULL COMMENT 'IP地址',
+ `host_name` bigint NOT NULL COMMENT 'IP地址',
  `port` int NOT NULL DEFAULT '1' COMMENT '端口',
  `deploy_env_type` enum('ACTUAL','CONTAINER') COLLATE utf8mb4_general_ci DEFAULT 'ACTUAL' COMMENT '部署环境类型',
  `description` varchar(255) COLLATE utf8mb4_general_ci DEFAULT '' COMMENT '说明',
