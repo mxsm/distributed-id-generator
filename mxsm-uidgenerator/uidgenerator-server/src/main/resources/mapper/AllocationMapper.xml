@@ -15,21 +15,6 @@
         </if>
         #{alloc.step}, now(), now())
     </insert>
-    <insert id="insertAllocationBatch">
-        INSERT INTO mxsm_allocation (biz_code,
-        <if test="alloc.maxId != null">
-            max_id,
-        </if>
-        step, create_time, update_time)
-        VALUES
-        <foreach collection ="allocs" item="alloc" index= "index" separator =",">
-            (#{alloc.bizCode},
-            <if test="alloc.maxId != null">
-                #{alloc.maxId},
-            </if>
-            #{alloc.step}, now(), now())
-        </foreach>
-    </insert>
 
     <update id="updateAllocation">
         UPDATE mxsm_allocation
