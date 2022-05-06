@@ -6,6 +6,7 @@ import com.github.mxsm.uid.core.exception.UidGenerateException;
 import com.github.mxsm.uid.core.utils.DateUtils;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
@@ -20,7 +21,6 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSnowflakeUidGenerator.class);
 
-
     private String epoch;
 
     private long epochTime;
@@ -29,6 +29,10 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
 
     private volatile long seqNum = 0;
 
+    private AtomicLong lastTimestampAtomic = new AtomicLong(-1);
+
+    private AtomicLong seqNumAtomic = new AtomicLong(0);
+
     private boolean timeBitsSecond;
 
     private BitsAllocator bitsAllocator;
@@ -36,6 +40,8 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
     private Object lockStandard = new Object();
 
     private Object lockExt = new Object();
+
+    private Lock lock = new ReentrantLock();
 
     public AbstractSnowflakeUidGenerator(String epoch, boolean timeBitsSecond, BitsAllocator bitsAllocator) {
         this.epoch = epoch;
@@ -57,7 +63,9 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
      */
     @Override
     public long getUID() throws UidGenerateException {
+        //return timeBitsSecond ? nextIdExtOptimisticLock() : nextIdStandardOptimisticLock();
         return timeBitsSecond ? nextIdExt() : nextIdStandard();
+        //return timeBitsSecond ? nextIdExtLock() : nextIdStandardLock();
     }
 
     /**
@@ -95,18 +103,9 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
             long currentTimestamp = System.currentTimeMillis();
             //Time the callback
             if (currentTimestamp < lastTimestamp) {
-                long offset = currentTimestamp - lastTimestamp;
+                long offset = lastTimestamp - currentTimestamp;
                 if (offset <= 1000L) {
-                    try {
-                        wait(offset);
-                        currentTimestamp = System.currentTimeMillis();
-                        if (currentTimestamp < lastTimestamp) {
-                            return -1;
-                        }
-                    } catch (InterruptedException e) {
-                        LOGGER.error("wait interrupted error", e);
-                        return -2;
-                    }
+                    currentTimestamp = tillNextMillis(lastTimestamp);
                 } else {
                     // offset > 1000ms
                     LOGGER.error("Time rollback exceeds 1 second");
@@ -116,11 +115,7 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
             if (currentTimestamp == lastTimestamp) {
                 seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
                 if (seqNum == 0) {
-                    seqNum = 0;
-                    currentTimestamp = System.currentTimeMillis();
-                    while (currentTimestamp <= lastTimestamp) {
-                        currentTimestamp = System.currentTimeMillis();
-                    }
+                    currentTimestamp = tillNextMillis(lastTimestamp);
                 }
             } else {
                 //reset seqNum
@@ -129,6 +124,81 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
             lastTimestamp = currentTimestamp;
             return bitsAllocator.allocate(currentTimestamp - epochTime, seqNum);
         }
+    }
+
+    private long nextIdStandardLock() {
+
+        try {
+            lock.lock();
+            long currentTimestamp = System.currentTimeMillis();
+            //Time the callback
+            if (currentTimestamp < lastTimestamp) {
+                long offset = lastTimestamp - currentTimestamp;
+                if (offset <= 1000L) {
+                    currentTimestamp = tillNextMillis(lastTimestamp);
+                } else {
+                    // offset > 1000ms
+                    LOGGER.error("Time rollback exceeds 1 second");
+                    return -3;
+                }
+            }
+            if (currentTimestamp == lastTimestamp) {
+                seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
+                if (seqNum == 0) {
+                    currentTimestamp = tillNextMillis(lastTimestamp);
+                }
+            } else {
+                //reset seqNum
+                seqNum = 0;
+            }
+            lastTimestamp = currentTimestamp;
+            return bitsAllocator.allocate(currentTimestamp - epochTime, seqNum);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private long nextIdStandardOptimisticLock() {
+
+        for (; ; ) {
+            long lastCurrent = lastTimestampAtomic.get();
+            long headSeqNum = seqNumAtomic.get();
+            long currentTimestamp = System.currentTimeMillis();
+
+            //Time the callback
+            if (currentTimestamp < lastCurrent) {
+                long offset = lastCurrent - currentTimestamp;
+                if (offset <= 1000L) {
+                    currentTimestamp = tillNextMillis(lastCurrent);
+                } else {
+                    // offset > 1000ms
+                    LOGGER.error("Time rollback exceeds 1 second");
+                    return -3;
+                }
+            }
+            long nextSeqNum = 0;
+            if (currentTimestamp == lastCurrent) {
+                nextSeqNum = (headSeqNum + 1) & bitsAllocator.getMaxSequence();
+                if (nextSeqNum == 0) {
+                    currentTimestamp = tillNextMillis(lastCurrent);
+                }
+            }
+            boolean flag = lastTimestampAtomic.compareAndSet(lastCurrent, currentTimestamp) &
+                seqNumAtomic.compareAndSet(headSeqNum, nextSeqNum);
+            if (!flag) {
+                continue;
+            }
+            return bitsAllocator.allocate(currentTimestamp - epochTime, nextSeqNum);
+        }
+    }
+
+    private long tillNextMillis(long lastCurrent) {
+        long currentTimestamp;
+        currentTimestamp = System.currentTimeMillis();
+        while (currentTimestamp <= lastCurrent) {
+            currentTimestamp = System.currentTimeMillis();
+        }
+        return currentTimestamp;
     }
 
     private long nextIdExt() {
@@ -161,6 +231,75 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
         }
     }
 
+    private long nextIdExtLock() {
+
+        try {
+            lock.lock();
+            long currentSecond = getCurrentSecond();
+
+            // Clock moved backwards, refuse to generate uid
+            if (currentSecond < lastTimestamp) {
+                long refusedSeconds = lastTimestamp - currentSecond;
+                LOGGER.error("Time rollback exceeds " + refusedSeconds + " second");
+                return -2;
+            }
+
+            // At the same second, increase sequence
+            if (currentSecond == lastTimestamp) {
+                LOGGER.info("currentSecond={}", currentSecond);
+                seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
+                // Exceed the max sequence, we wait the next second to generate uid
+                if (seqNum == 0) {
+                    currentSecond = getNextSecond(lastTimestamp);
+                }
+            } else {
+                // At the different second, sequence restart from zero
+                seqNum = 0L;
+            }
+            lastTimestamp = currentSecond;
+            // Allocate bits for UID
+            return bitsAllocator.allocate(currentSecond - epochTime, seqNum);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private long nextIdExtOptimisticLock() {
+
+        for (; ; ) {
+            long lastCurrent = lastTimestampAtomic.get();
+            long currentSecond = getCurrentSecond();
+            long headSeqNum = seqNumAtomic.get();
+            // Clock moved backwards, refuse to generate uid
+            if (currentSecond < lastCurrent) {
+                long refusedSeconds = lastCurrent - currentSecond;
+                LOGGER.error("Time rollback exceeds " + refusedSeconds + " second");
+                return -2;
+            }
+
+            long nextSeqNum = 0L;
+            // At the same second, increase sequence
+            if (currentSecond == lastCurrent) {
+                nextSeqNum = (headSeqNum + 1) & bitsAllocator.getMaxSequence();
+                // Exceed the max sequence, we wait the next second to generate uid
+                if (nextSeqNum == 0) {
+                    currentSecond = getNextSecond(lastCurrent);
+                }
+            } else {
+                // At the different second, sequence restart from zero
+                nextSeqNum = 0L;
+            }
+            boolean flag = lastTimestampAtomic.compareAndSet(lastCurrent, currentSecond) &
+                seqNumAtomic.compareAndSet(headSeqNum, nextSeqNum);
+            if (!flag) {
+                continue;
+            }
+            // Allocate bits for UID
+            return bitsAllocator.allocate(currentSecond - epochTime, nextSeqNum);
+        }
+    }
+
+
     /**
      * Get next millisecond
      */
@@ -169,7 +308,6 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
         while (timestamp <= lastTimestamp) {
             timestamp = getCurrentSecond();
         }
-
         return timestamp;
     }
 

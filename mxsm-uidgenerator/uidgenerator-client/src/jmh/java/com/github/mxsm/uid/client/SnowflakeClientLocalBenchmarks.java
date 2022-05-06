@@ -37,7 +37,7 @@ public class SnowflakeClientLocalBenchmarks {
 
     @Setup
     public void init(){
-            uidClient = UidClient.builder().setUidGeneratorServerUir("172.29.250.21:8080")
+            uidClient = UidClient.builder().setUidGeneratorServerUir("172.29.250.21:8080").setMachineIdBits(5).setSequenceBits(17)
                 .setSegmentNum(20).setThreshold(30).isSnowflakeUidFromRemote(false).build();
 /*        uidClient = UidClient.builder().setUidGeneratorServerUir("http://192.168.3.21:8080")
                 .setSegmentNum(20).setThreshold(30).isSnowflakeLocal(false).build();*/
