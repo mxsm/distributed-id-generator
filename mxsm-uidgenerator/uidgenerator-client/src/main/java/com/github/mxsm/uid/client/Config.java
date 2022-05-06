@@ -9,21 +9,25 @@ public class Config {
 
     private String uidGeneratorServerUir;
 
-    private int segmentNum;
+    private int segmentNum = 16;
 
-    private int threshold;
+    private int threshold = 30;
 
     private int timestampBits = 41;
+
     private int machineIdBits = 10;
+
     private int sequenceBits = 12;
 
-    private boolean container;
+    private boolean container = false;
 
-    private boolean timeBitsSecond;
+    private boolean timeBitsSecond = false;
 
     private String epoch = "2015-05-01";
 
-    private boolean snowflakeLocal = false;
+    private boolean snowflakeUidFromRemote = true;
+
+    private boolean segmentUidFromRemote = true;
 
     public int getSegmentNum() {
         return segmentNum;
@@ -97,11 +101,19 @@ public class Config {
         this.uidGeneratorServerUir = uidGeneratorServerUir;
     }
 
-    public boolean isSnowflakeLocal() {
-        return snowflakeLocal;
+    public boolean isSnowflakeUidFromRemote() {
+        return snowflakeUidFromRemote;
     }
 
-    public void setSnowflakeLocal(boolean snowflakeLocal) {
-        this.snowflakeLocal = snowflakeLocal;
+    public void setSnowflakeUidFromRemote(boolean snowflakeUidFromRemote) {
+        this.snowflakeUidFromRemote = snowflakeUidFromRemote;
+    }
+
+    public boolean isSegmentUidFromRemote() {
+        return segmentUidFromRemote;
+    }
+
+    public void setSegmentUidFromRemote(boolean segmentUidFromRemote) {
+        this.segmentUidFromRemote = segmentUidFromRemote;
     }
 }

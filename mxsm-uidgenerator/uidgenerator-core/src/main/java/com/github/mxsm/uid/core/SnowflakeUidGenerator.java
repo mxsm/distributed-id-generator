@@ -1,5 +1,6 @@
 package com.github.mxsm.uid.core;
 
+import com.github.mxsm.uid.core.common.SnowflakeUidParsedResult;
 import com.github.mxsm.uid.core.exception.UidGenerateException;
 
 /**
@@ -23,5 +24,5 @@ public interface SnowflakeUidGenerator {
      * @param uid
      * @return
      */
-    String parseUID(long uid);
+    SnowflakeUidParsedResult parseUID(long uid);
 }

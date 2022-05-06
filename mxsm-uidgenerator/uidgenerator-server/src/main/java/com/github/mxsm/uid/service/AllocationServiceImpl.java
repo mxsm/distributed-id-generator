@@ -28,6 +28,9 @@ public class AllocationServiceImpl implements AllocationService{
     @Transactional(rollbackFor = Exception.class)
     public List<Segment> getSegments(String bizCode, int segmentNum) {
         AllocationEntity allocation = allocationDao.getAllocation(bizCode);
+        if(allocation == null){
+            return new ArrayList<>();
+        }
         allocationDao.updateAllocation(segmentNum, bizCode);
         Long startUid = allocation.getMaxId();
         Integer stepLength = allocation.getStep();

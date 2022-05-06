@@ -27,20 +27,26 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 3, time = 2)
-@Measurement(iterations = 2, time = 5)
+@Measurement(iterations = 3, time = 5)
 @Fork(1)
 @State(value = Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
-public class SnowflakeClientBenchmarks {
+public class SnowflakeClientLocalBenchmarks {
 
     private UidClient uidClient;
 
     @Setup
     public void init(){
             uidClient = UidClient.builder().setUidGeneratorServerUir("172.29.250.21:8080")
-                .setSegmentNum(20).setThreshold(30).isSnowflakeUidFromRemote(true).build();
+                .setSegmentNum(20).setThreshold(30).isSnowflakeUidFromRemote(false).build();
 /*        uidClient = UidClient.builder().setUidGeneratorServerUir("http://192.168.3.21:8080")
                 .setSegmentNum(20).setThreshold(30).isSnowflakeLocal(false).build();*/
+    }
+
+    @Benchmark
+    @Threads(1)
+    public void snowflakeClientLoaclBenchmarksThread1(Blackhole blackhole){
+        blackhole.consume(uidClient.getSnowflakeUid());
     }
 
     @Benchmark
@@ -48,6 +54,7 @@ public class SnowflakeClientBenchmarks {
     public void snowflakeClientLoaclBenchmarksThread4(Blackhole blackhole){
         blackhole.consume(uidClient.getSnowflakeUid());
     }
+
 
     @Benchmark
     @Threads(8)
@@ -62,12 +69,28 @@ public class SnowflakeClientBenchmarks {
     }
 
     @Benchmark
+    @Threads(32)
+    public void snowflakeClientLoaclBenchmarksThread32(Blackhole blackhole){
+        blackhole.consume(uidClient.getSnowflakeUid());
+    }
+
+    @Benchmark
     @Threads(50)
     public void snowflakeClientLoaclBenchmarksThread50(Blackhole blackhole){
         blackhole.consume(uidClient.getSnowflakeUid());
     }
 
+    @Benchmark
+    @Threads(100)
+    public void snowflakeClientLoaclBenchmarksThread100(Blackhole blackhole){
+        blackhole.consume(uidClient.getSnowflakeUid());
+    }
 
+    @Benchmark
+    @Threads(200)
+    public void snowflakeClientLoaclBenchmarksThread200(Blackhole blackhole){
+        blackhole.consume(uidClient.getSnowflakeUid());
+    }
 
 /*    @TearDown
     public void shutdown(){
@@ -76,7 +99,7 @@ public class SnowflakeClientBenchmarks {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(SnowflakeClientBenchmarks.class.getSimpleName())
+            .include(SnowflakeClientLocalBenchmarks.class.getSimpleName())
             .result("result.json")
             .resultFormat(ResultFormatType.JSON).build();
         new Runner(opt).run();

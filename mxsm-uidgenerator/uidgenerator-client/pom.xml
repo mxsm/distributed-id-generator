@@ -42,7 +42,6 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.76</version>
         </dependency>
 
         <dependency>
@@ -157,7 +156,9 @@
                             <transformers>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.github.mxsm.uid.client.SnowflakeClientBenchmarks</mainClass>
+                                   <!-- <mainClass>com.github.mxsm.uid.client.UidClientBenchmarks</mainClass>-->
+                                    <!--<mainClass>com.github.mxsm.uid.client.SnowflakeClientBenchmarks</mainClass>-->
+                                    <mainClass>com.github.mxsm.uid.client.SnowflakeClientLocalBenchmarks</mainClass>
                                 </transformer>
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>

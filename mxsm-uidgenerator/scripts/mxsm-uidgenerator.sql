@@ -1,3 +1,8 @@
+DROP DATABASE IF EXISTS `uidgenerator`;
+CREATE DATABASE `uidgenerator` ;
+use `uidgenerator`;
+
+DROP TABLE IF EXISTS mxsm_allocation;
 CREATE TABLE `mxsm_allocation` (
  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
  `biz_code` varchar(128) COLLATE utf8mb4_general_ci NOT NULL COMMENT '业务编码(用户ID,使用业务方编码)',
@@ -10,6 +15,7 @@ CREATE TABLE `mxsm_allocation` (
  UNIQUE KEY `biz_code_index` (`biz_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+DROP TABLE IF EXISTS mxsm_snowfalke_node;
 CREATE TABLE `mxsm_snowfalke_node` (
  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
  `host_name` bigint NOT NULL COMMENT 'IP地址',

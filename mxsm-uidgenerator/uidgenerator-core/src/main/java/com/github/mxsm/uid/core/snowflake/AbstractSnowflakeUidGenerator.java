@@ -1,10 +1,13 @@
 package com.github.mxsm.uid.core.snowflake;
 
 import com.github.mxsm.uid.core.SnowflakeUidGenerator;
+import com.github.mxsm.uid.core.common.SnowflakeUidParsedResult;
 import com.github.mxsm.uid.core.exception.UidGenerateException;
 import com.github.mxsm.uid.core.utils.DateUtils;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +32,10 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
     private boolean timeBitsSecond;
 
     private BitsAllocator bitsAllocator;
+
+    private Object lockStandard = new Object();
+
+    private Object lockExt = new Object();
 
     public AbstractSnowflakeUidGenerator(String epoch, boolean timeBitsSecond, BitsAllocator bitsAllocator) {
         this.epoch = epoch;
@@ -60,7 +67,7 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
      * @return
      */
     @Override
-    public String parseUID(long uid) {
+    public SnowflakeUidParsedResult parseUID(long uid) {
         long totalBits = BitsAllocator.TOTAL_BITS;
         long signBits = bitsAllocator.getSignBits();
         long timestampBits = bitsAllocator.getTimestampBits();
@@ -72,81 +79,86 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
         long machineId = (uid << (timestampBits + signBits)) >>> (totalBits - workerIdBits);
         long deltaTime = uid >>> (workerIdBits + sequenceBits);
 
-        Date thatTime = new Date(timeBitsSecond?TimeUnit.SECONDS.toMillis(epochTime + deltaTime):epochTime+deltaTime);
+        Date thatTime = new Date(
+            timeBitsSecond ? TimeUnit.SECONDS.toMillis(epochTime + deltaTime) : epochTime + deltaTime);
         String thatTimeStr = DateUtils.formatByDateTimePattern(thatTime);
 
         // format as string
-        return String.format("{\"UID\":\"%d\",\"timestamp\":\"%s\",\"machineId\":\"%d\",\"sequence\":\"%d\"}",
-            uid, thatTimeStr, machineId, sequence);
+        return new SnowflakeUidParsedResult(uid, thatTimeStr, machineId, sequence);
     }
 
-    public  abstract long getMachineId();
+    public abstract long getMachineId();
 
-    private synchronized long nextIdStandard() {
-        long currentTimestamp = System.currentTimeMillis();
-        //Time the callback
-        if (currentTimestamp < lastTimestamp) {
-            long offset = currentTimestamp - lastTimestamp;
-            if (offset <= 1000L) {
-                try {
-                    wait(offset);
-                    currentTimestamp = System.currentTimeMillis();
-                    if (currentTimestamp < lastTimestamp) {
-                        return -1;
+    private long nextIdStandard() {
+
+        synchronized (lockStandard) {
+            long currentTimestamp = System.currentTimeMillis();
+            //Time the callback
+            if (currentTimestamp < lastTimestamp) {
+                long offset = currentTimestamp - lastTimestamp;
+                if (offset <= 1000L) {
+                    try {
+                        wait(offset);
+                        currentTimestamp = System.currentTimeMillis();
+                        if (currentTimestamp < lastTimestamp) {
+                            return -1;
+                        }
+                    } catch (InterruptedException e) {
+                        LOGGER.error("wait interrupted error", e);
+                        return -2;
                     }
-                } catch (InterruptedException e) {
-                    LOGGER.error("wait interrupted error", e);
-                    return -2;
+                } else {
+                    // offset > 1000ms
+                    LOGGER.error("Time rollback exceeds 1 second");
+                    return -3;
+                }
+            }
+            if (currentTimestamp == lastTimestamp) {
+                seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
+                if (seqNum == 0) {
+                    seqNum = 0;
+                    currentTimestamp = System.currentTimeMillis();
+                    while (currentTimestamp <= lastTimestamp) {
+                        currentTimestamp = System.currentTimeMillis();
+                    }
                 }
             } else {
-                // offset > 1000ms
-                LOGGER.error("Time rollback exceeds 1 second");
-                return -3;
-            }
-        }
-        if (currentTimestamp == lastTimestamp) {
-            seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
-            if (seqNum == 0) {
+                //reset seqNum
                 seqNum = 0;
-                currentTimestamp = System.currentTimeMillis();
-                while (currentTimestamp <= lastTimestamp) {
-                    currentTimestamp = System.currentTimeMillis();
-                }
             }
-        } else {
-            //reset seqNum
-            seqNum = 0;
+            lastTimestamp = currentTimestamp;
+            return bitsAllocator.allocate(currentTimestamp - epochTime, seqNum);
         }
-        lastTimestamp = currentTimestamp;
-        return bitsAllocator.allocate(currentTimestamp - epochTime, seqNum);
     }
 
-    private synchronized long nextIdExt() {
+    private long nextIdExt() {
 
-        long currentSecond = getCurrentSecond();
+        synchronized (lockExt) {
+            long currentSecond = getCurrentSecond();
 
-        // Clock moved backwards, refuse to generate uid
-        if (currentSecond < lastTimestamp) {
-            long refusedSeconds = lastTimestamp - currentSecond;
-            LOGGER.error("Time rollback exceeds "+refusedSeconds+" second");
-            return -2;
-        }
-
-        // At the same second, increase sequence
-        if (currentSecond == lastTimestamp) {
-            LOGGER.info("currentSecond={}",currentSecond);
-            seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
-            // Exceed the max sequence, we wait the next second to generate uid
-            if (seqNum == 0) {
-                currentSecond = getNextSecond(lastTimestamp);
+            // Clock moved backwards, refuse to generate uid
+            if (currentSecond < lastTimestamp) {
+                long refusedSeconds = lastTimestamp - currentSecond;
+                LOGGER.error("Time rollback exceeds " + refusedSeconds + " second");
+                return -2;
             }
-        } else {
-            // At the different second, sequence restart from zero
-            seqNum = 0L;
+
+            // At the same second, increase sequence
+            if (currentSecond == lastTimestamp) {
+                LOGGER.info("currentSecond={}", currentSecond);
+                seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
+                // Exceed the max sequence, we wait the next second to generate uid
+                if (seqNum == 0) {
+                    currentSecond = getNextSecond(lastTimestamp);
+                }
+            } else {
+                // At the different second, sequence restart from zero
+                seqNum = 0L;
+            }
+            lastTimestamp = currentSecond;
+            // Allocate bits for UID
+            return bitsAllocator.allocate(currentSecond - epochTime, seqNum);
         }
-        lastTimestamp = currentSecond;
-        // Allocate bits for UID
-        return bitsAllocator.allocate(currentSecond - epochTime, seqNum);
     }
 
     /**
@@ -167,7 +179,8 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
     private long getCurrentSecond() {
         long currentSecond = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         if (currentSecond - epochTime > bitsAllocator.getMaxTimestamp()) {
-            throw new UidGenerateException("Timestamp bits is exhausted. Refusing UID generate. Now: " + currentSecond + ", epoch: " + epoch);
+            throw new UidGenerateException(
+                "Timestamp bits is exhausted. Refusing UID generate. Now: " + currentSecond + ", epoch: " + epoch);
         }
         return currentSecond;
     }

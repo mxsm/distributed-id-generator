@@ -1,16 +1,11 @@
 package com.github.mxsm.uid.client.service;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+import com.github.mxsm.uid.client.Http2Requester;
+import com.github.mxsm.uid.client.utils.UrlUtils;
 import com.github.mxsm.uid.core.SnowflakeUidGenerator;
-import com.github.mxsm.uid.core.common.Result;
 import com.github.mxsm.uid.core.exception.UidGenerateException;
 import com.github.mxsm.uid.core.snowflake.AbstractSnowflakeUidGenerator;
 import com.github.mxsm.uid.core.snowflake.BitsAllocator;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.apache.hc.client5.http.fluent.Request;
-import org.apache.hc.client5.http.fluent.Response;
 
 /**
  * @author mxsm
@@ -19,15 +14,29 @@ import org.apache.hc.client5.http.fluent.Response;
  */
 public class SnowflakeUidGeneratorClientImpl extends AbstractSnowflakeUidGenerator implements SnowflakeUidGenerator {
 
+    public static final String SNOWFLAKE_UDI_PATH = "/api/v1/snowflake/uid";
+
     private String uidGeneratorServerUir;
 
-    private boolean snowflakeLocal;
+    private boolean snowflakeUidFromRemote;
 
-    public SnowflakeUidGeneratorClientImpl(String uidGeneratorServerUir, String epoch, boolean timeBitsSecond,boolean snowflakeLocal, BitsAllocator bitsAllocator) {
+    private String host;
+
+    private int port;
+
+    public SnowflakeUidGeneratorClientImpl(String uidGeneratorServerUir, String epoch, boolean timeBitsSecond,
+        boolean snowflakeUidFromRemote, BitsAllocator bitsAllocator) {
         super(epoch, timeBitsSecond, bitsAllocator);
         this.uidGeneratorServerUir = uidGeneratorServerUir;
-        this.snowflakeLocal = snowflakeLocal;
+        this.snowflakeUidFromRemote = snowflakeUidFromRemote;
         bitsAllocator.setMachineId(getMachineId());
+        parseURL();
+    }
+
+    private void parseURL() {
+        String[] sts = UrlUtils.parseUriAndPort(this.uidGeneratorServerUir);
+        this.host = sts[0];
+        this.port = Integer.parseInt(sts[1]);
     }
 
     @Override
@@ -43,20 +52,15 @@ public class SnowflakeUidGeneratorClientImpl extends AbstractSnowflakeUidGenerat
      */
     @Override
     public long getUID() throws UidGenerateException {
-        return snowflakeLocal? super.getUID(): getUidFromRemote();
+        return snowflakeUidFromRemote ? getUidFromRemote() : super.getUID();
     }
 
-    public long getUidFromRemote(){
+    public long getUidFromRemote() {
         try {
-            String uri = uidGeneratorServerUir + "/api/v1/snowflake/uid";
-            Response response = Request.get(uri).execute();
-            String content = response.returnContent().asString(StandardCharsets.UTF_8);
-            Result<Long> result = JSON.parseObject(content, new TypeReference<>() {
-            });
-            return result.getData();
-        } catch (IOException e) {
-            //TODO
+            String content = Http2Requester.executeGET(host, port, SNOWFLAKE_UDI_PATH);
+            return Long.parseLong(content);
+        } catch (Exception e) {
+            throw new UidGenerateException("Get Uid from remote [URL=" + SNOWFLAKE_UDI_PATH + "] error", e);
         }
-        return -1;
     }
 }

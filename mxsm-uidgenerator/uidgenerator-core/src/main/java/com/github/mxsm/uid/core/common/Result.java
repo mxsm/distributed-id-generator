@@ -11,13 +11,16 @@ public class Result<T> {
 
     private Status status;
 
+    private String msg;
+
     public T getData() {
         return data;
     }
 
-    public Result(T data, Status status) {
+    public Result(T data, Status status, String msg) {
         this.data = data;
         this.status = status;
+        this.msg = msg;
     }
 
     public Result() {
@@ -36,6 +39,14 @@ public class Result<T> {
         this.status = status;
     }
 
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
     @Override
     public String toString() {
         return "Result{" +
@@ -49,15 +60,16 @@ public class Result<T> {
         Result<T> result = new Result<>();
         result.setStatus(Status.SUCCESS);
         result.setData(data);
-
+        result.setMsg("SUCCESS");
         return result;
     }
 
-    public static <T> Result<T> buildError(T data) {
+    public static <T> Result<T> buildError(T data, String msg) {
 
         Result<T> result = new Result<>();
         result.setStatus(Status.EXCEPTION);
         result.setData(data);
+        result.setMsg(msg);
 
         return result;
     }

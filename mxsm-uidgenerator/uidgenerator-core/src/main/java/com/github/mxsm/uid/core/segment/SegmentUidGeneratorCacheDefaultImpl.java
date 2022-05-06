@@ -1,5 +1,6 @@
 package com.github.mxsm.uid.core.segment;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -13,7 +14,7 @@ import java.util.function.Supplier;
  */
 public class SegmentUidGeneratorCacheDefaultImpl implements SegmentUidGeneratorCache {
 
-    private Map<String, SegmentPanel> caches = new ConcurrentHashMap<>();
+    private Map<String, SegmentPanel> caches = new HashMap<>();
 
     private Lock lock = new ReentrantLock();
 

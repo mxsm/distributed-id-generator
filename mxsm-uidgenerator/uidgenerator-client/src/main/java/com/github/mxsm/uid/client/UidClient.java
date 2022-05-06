@@ -1,5 +1,7 @@
 package com.github.mxsm.uid.client;
 
+import com.github.mxsm.uid.core.common.SnowflakeUidParsedResult;
+
 /**
  * @author mxsm
  * @date 2022/4/30 15:54
@@ -7,15 +9,13 @@ package com.github.mxsm.uid.client;
  */
 public interface UidClient {
 
-    long getSegmentUidFromCache(String bizCode);
+    long getSegmentUid(String bizCode, boolean fromRemote);
 
-    long getSnowflakeUidFromRemote(String bizCode);
+    long getSegmentUid(String bizCode);
 
-    long getSnowflakeUidFromRemote();
+    long getSnowflakeUid();
 
-    long getSnowflakeUidFromLocal();
-
-    void shutdown();
+    SnowflakeUidParsedResult parseSnowflakeUid(long uid);
 
     static UidClientBuilder builder(){
         return new UidClientBuilder();

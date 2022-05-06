@@ -56,10 +56,17 @@ public final class UidClientBuilder {
         return this;
     }
 
-    public UidClientBuilder isSnowflakeLocal(boolean snowflakeLocal) {
-        this.config.setSnowflakeLocal(snowflakeLocal);
+    public UidClientBuilder isSnowflakeUidFromRemote(boolean fromRemote) {
+        this.config.setSnowflakeUidFromRemote(fromRemote);
         return this;
     }
+
+    public UidClientBuilder isSegmentUidFromRemote(boolean fromRemote) {
+        this.config.setSegmentUidFromRemote(fromRemote);
+        return this;
+    }
+
+
 
     public UidClient build() {
         return new UidClientImpl(config);

@@ -1,10 +1,12 @@
 package com.github.mxsm.uid.controller;
 
+import com.github.mxsm.uid.core.SegmentUidGenerator;
 import com.github.mxsm.uid.core.common.Result;
 import com.github.mxsm.uid.core.segment.Segment;
-import com.github.mxsm.uid.service.UidGenerateService;
+import com.github.mxsm.uid.dto.BizCodeRegisterReqDto;
+import com.github.mxsm.uid.service.AllocationService;
 import java.util.List;
-import java.util.Map;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,14 +26,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class SegmentUidGeneratorController {
 
     @Autowired
-    private UidGenerateService uidGenerateService;
+    private AllocationService allocationService;
+
+    @Autowired
+    private SegmentUidGenerator segmentUidGenerator;
 
     @PostMapping("/rg")
-    public Result<Boolean> registerBizCode(@RequestBody Map<String,String> params){
-        String bizCode = params.get("bizCode");
-        Integer step = Integer.parseInt(params.get("step"));
-        return Result.buildSuccess(uidGenerateService.registerBizCode(bizCode,step));
-
+    public Result<Boolean> registerBizCode(@RequestBody @Valid BizCodeRegisterReqDto params){
+        String bizCode = params.getBizCode();
+        Integer step = params.getStep();
+        return Result.buildSuccess(allocationService.registerBizCode(bizCode,step));
     }
 
     /**
@@ -41,10 +45,9 @@ public class SegmentUidGeneratorController {
      * @return
      */
     @GetMapping("/uid/{bizCode}")
-    public Result<Long> getUid(@PathVariable("bizCode") String bizCode) {
-        long uid = uidGenerateService.getUID(bizCode);
-        return new Result().buildSuccess(uid);
-
+    public long getUid(@PathVariable("bizCode") String bizCode) {
+        long uid = segmentUidGenerator.getUID(bizCode);
+        return uid;
     }
 
     /**
@@ -54,10 +57,10 @@ public class SegmentUidGeneratorController {
      * @param segmentNum number of step
      * @return
      */
-    @GetMapping("/step/{bizCode}")
+    @GetMapping("/list/{bizCode}")
     public Result<List<Segment>> getStep(@PathVariable("bizCode") String bizCode,
         @RequestParam("segmentNum") Integer segmentNum) {
-        List<Segment> segments = uidGenerateService.getSegments(bizCode, segmentNum);
+        List<Segment> segments = allocationService.getSegments(bizCode, segmentNum);
         return new Result().buildSuccess(segments);
     }
 

@@ -59,6 +59,9 @@ public class SegmentPanel {
                                 listener.listener(this, counter);
                             }
                             this.currentSegment = segmentQueue.poll(3, TimeUnit.SECONDS);
+                            if(this.currentSegment == null){
+                                return -1;
+                            }
                             ++counter;
                         }
                     } catch (InterruptedException interruptedException) {
@@ -69,6 +72,9 @@ public class SegmentPanel {
                 } else {
                     try {
                         this.currentSegment = segmentQueue.poll(3, TimeUnit.SECONDS);
+                        if(this.currentSegment == null){
+                            return -1;
+                        }
                     } catch (InterruptedException ex) {
                         LOGGER.error("poll segment from segmentQueue error", ex);
                     }

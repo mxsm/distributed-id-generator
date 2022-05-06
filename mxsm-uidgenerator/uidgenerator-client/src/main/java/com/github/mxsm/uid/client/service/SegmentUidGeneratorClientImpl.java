@@ -1,27 +1,33 @@
 package com.github.mxsm.uid.client.service;
 
+
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.github.mxsm.uid.client.Http2Requester;
+import com.github.mxsm.uid.client.utils.UrlUtils;
 import com.github.mxsm.uid.core.SegmentUidGenerator;
 import com.github.mxsm.uid.core.common.Result;
 import com.github.mxsm.uid.core.exception.UidGenerateException;
 import com.github.mxsm.uid.core.segment.Segment;
 import com.github.mxsm.uid.core.segment.SegmentConsumerListener;
 import com.github.mxsm.uid.core.segment.SegmentPanel;
-import com.github.mxsm.uid.core.segment.SegmentUidGeneratorAbstract;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import com.github.mxsm.uid.core.segment.AbstractSegmentUidGenerator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import org.apache.hc.client5.http.fluent.Request;
-import org.apache.hc.client5.http.fluent.Response;
 
 /**
  * @author mxsm
  * @date 2022/4/30 21:05
  * @Since 1.0.0
  */
-public class SegmentUidGeneratorClientImpl extends SegmentUidGeneratorAbstract implements SegmentUidGenerator, SegmentConsumerListener {
+public class SegmentUidGeneratorClientImpl extends AbstractSegmentUidGenerator implements SegmentUidGenerator,
+    SegmentConsumerListener {
+
+    public static final String SEGMENT_UID_PATH = "/api/v1/segment/uid/";
+
+    public static final String SEGMENTS_PATH = "/api/v1/segment/list/";
 
     private String uidGeneratorServerUir;
 
@@ -29,12 +35,23 @@ public class SegmentUidGeneratorClientImpl extends SegmentUidGeneratorAbstract i
 
     private ExecutorService executorService;
 
+    private String host;
+
+    private int port;
+
     public SegmentUidGeneratorClientImpl(String uidGeneratorServerUir, int cacheSize, int threshold,
         ExecutorService executorService) {
         super(cacheSize);
         this.uidGeneratorServerUir = uidGeneratorServerUir;
         this.threshold = threshold;
         this.executorService = executorService;
+        parseURL();
+    }
+
+    private void parseURL() {
+        String[] sts = UrlUtils.parseUriAndPort(this.uidGeneratorServerUir);
+        this.host = sts[0];
+        this.port = Integer.parseInt(sts[1]);
     }
 
     @Override
@@ -51,15 +68,15 @@ public class SegmentUidGeneratorClientImpl extends SegmentUidGeneratorAbstract i
      * @param segmentNum
      * @return
      */
-    protected List<Segment> getSegments(String bizCode, int segmentNum) {
+    @Override
+    public List<Segment> getSegments(String bizCode, int segmentNum) {
         try {
-            String uri = uidGeneratorServerUir + "/api/v1/segment/step/" + bizCode + "?segmentNum=" + segmentNum;
-            Response response = Request.get(uri).execute();
-            String content = response.returnContent().asString(StandardCharsets.UTF_8);
+            StringBuilder path = new StringBuilder(SEGMENTS_PATH).append(bizCode);
+            String content = Http2Requester.executeGET(host, port, path.toString(), new HashMap<>());
             Result<List<Segment>> result = JSON.parseObject(content, new TypeReference<>() {
             });
             return result.getData();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -84,22 +101,20 @@ public class SegmentUidGeneratorClientImpl extends SegmentUidGeneratorAbstract i
      */
     @Override
     public long getUID(String bizCode) throws UidGenerateException {
+        StringBuilder path = new StringBuilder(SEGMENT_UID_PATH).append(bizCode);
         try {
-            String uri = uidGeneratorServerUir + "/api/v1/segment/uid/" + bizCode;
-            Response response = Request.get(uri).execute();
-            String content = response.returnContent().asString(StandardCharsets.UTF_8);
-            Result<Long> result = JSON.parseObject(content, new TypeReference<>() {
-            });
-            return result.getData();
-        } catch (IOException e) {
-            //TODO
+            String content = Http2Requester.executeGET(host, port, path.toString());
+            return Long.parseLong(content);
+        } catch (Exception e) {
+            throw new UidGenerateException("Get Uid from remote [URL=" + this.uidGeneratorServerUir + path + "] error",
+                e);
         }
-        return -1;
     }
 
     public long getUIDFromLocalCache(String bizCode) throws UidGenerateException {
         return super.getUID(bizCode);
     }
+
 
     class AsyncHandleTask implements Runnable {
 

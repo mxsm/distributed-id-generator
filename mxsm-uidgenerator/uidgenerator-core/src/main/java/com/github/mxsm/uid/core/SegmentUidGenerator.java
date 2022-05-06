@@ -1,6 +1,8 @@
 package com.github.mxsm.uid.core;
 
 import com.github.mxsm.uid.core.exception.UidGenerateException;
+import com.github.mxsm.uid.core.segment.Segment;
+import java.util.List;
 
 /**
  * @author mxsm
@@ -18,4 +20,5 @@ public interface SegmentUidGenerator {
      */
     long getUID(String bizCode) throws UidGenerateException;
 
+    List<Segment> getSegments(String bizCode, int segmentNum);
 }

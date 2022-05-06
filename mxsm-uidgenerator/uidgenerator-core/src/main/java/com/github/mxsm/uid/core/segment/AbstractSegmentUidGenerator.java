@@ -7,13 +7,13 @@ import com.github.mxsm.uid.core.SegmentUidGenerator;
  * @date 2022/5/1 16:13
  * @Since 1.0.0
  */
-public abstract class SegmentUidGeneratorAbstract implements SegmentUidGenerator {
+public abstract class AbstractSegmentUidGenerator implements SegmentUidGenerator {
 
     private SegmentUidGeneratorCache uidGenerateCache;
 
     private int cacheSize;
 
-    public SegmentUidGeneratorAbstract(int cacheSize) {
+    public AbstractSegmentUidGenerator(int cacheSize) {
         this.uidGenerateCache = new SegmentUidGeneratorCacheDefaultImpl();
         this.cacheSize = cacheSize;
     }
@@ -25,6 +25,6 @@ public abstract class SegmentUidGeneratorAbstract implements SegmentUidGenerator
         return uid;
     }
 
-    public abstract SegmentPanel createSegmentPanel(String bizCode, int stepSize);
+    public abstract SegmentPanel createSegmentPanel(String bizCode, int segmentNum);
 
 }
