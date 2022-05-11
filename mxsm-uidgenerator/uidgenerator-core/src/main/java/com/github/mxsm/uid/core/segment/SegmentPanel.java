@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SegmentPanel {
 
-   private Logger LOGGER = LoggerFactory.getLogger(SegmentPanel.class);
+    private Logger LOGGER = LoggerFactory.getLogger(SegmentPanel.class);
 
     private BlockingQueue<Segment> segmentQueue;
 
@@ -37,6 +37,7 @@ public class SegmentPanel {
 
     public SegmentPanel(String bizCode, int capacity, int threshold, List<Segment> segments,
         SegmentConsumerListener listener) {
+
         this.bizCode = bizCode;
         this.capacity = capacity <= 0 ? 16 : capacity;
         this.segmentQueue = new ArrayBlockingQueue<>(this.capacity);
@@ -59,7 +60,7 @@ public class SegmentPanel {
                                 listener.listener(this, counter);
                             }
                             this.currentSegment = segmentQueue.poll(3, TimeUnit.SECONDS);
-                            if(this.currentSegment == null){
+                            if (this.currentSegment == null) {
                                 return -1;
                             }
                             ++counter;
@@ -72,7 +73,7 @@ public class SegmentPanel {
                 } else {
                     try {
                         this.currentSegment = segmentQueue.poll(3, TimeUnit.SECONDS);
-                        if(this.currentSegment == null){
+                        if (this.currentSegment == null) {
                             return -1;
                         }
                     } catch (InterruptedException ex) {

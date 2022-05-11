@@ -101,7 +101,7 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
 
         synchronized (lockStandard) {
             long currentTimestamp = System.currentTimeMillis();
-            //Time the callback
+            //time the callback
             if (currentTimestamp < lastTimestamp) {
                 long offset = lastTimestamp - currentTimestamp;
                 if (offset <= 1000L) {
@@ -206,16 +206,15 @@ public abstract class AbstractSnowflakeUidGenerator implements SnowflakeUidGener
         synchronized (lockExt) {
             long currentSecond = getCurrentSecond();
 
-            // Clock moved backwards, refuse to generate uid
+            // clock moved backwards, refuse to generate uid
             if (currentSecond < lastTimestamp) {
                 long refusedSeconds = lastTimestamp - currentSecond;
                 LOGGER.error("Time rollback exceeds " + refusedSeconds + " second");
                 return -2;
             }
 
-            // At the same second, increase sequence
+            // at the same second, increase sequence
             if (currentSecond == lastTimestamp) {
-                LOGGER.info("currentSecond={}", currentSecond);
                 seqNum = (seqNum + 1) & bitsAllocator.getMaxSequence();
                 // Exceed the max sequence, we wait the next second to generate uid
                 if (seqNum == 0) {

@@ -25,6 +25,8 @@ import org.apache.hc.core5.http2.impl.nio.bootstrap.H2RequesterBootstrap;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author mxsm
@@ -32,6 +34,8 @@ import org.apache.hc.core5.util.Timeout;
  * @Since 1.0.0
  */
 public class Http2Requester {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Http2Requester.class);
 
     private final static Http2Requester H2REQUESTER = new Http2Requester();
 
@@ -66,7 +70,7 @@ public class Http2Requester {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.out.println("HTTP requester shutting down");
+                LOGGER.info("HTTP requester shutting down");
                 requester.close(CloseMode.GRACEFUL);
             }
         });
@@ -100,7 +104,8 @@ public class Http2Requester {
         Message<HttpResponse, String> httpResponseStringMessage = execute.get();
         int code = httpResponseStringMessage.getHead().getCode();
         if (code != 200) {
-            throw new ClientHttpRequestException("HTTP Code:"+ code+", Message:"+httpResponseStringMessage.getBody());
+            throw new ClientHttpRequestException(
+                "HTTP Code:" + code + ", Message:" + httpResponseStringMessage.getBody());
         }
         return httpResponseStringMessage.getBody();
     }
@@ -120,7 +125,6 @@ public class Http2Requester {
             asyncRequestBuilder.build(),
             new BasicResponseConsumer<>(new StringAsyncEntityConsumer()),
             new FutureCallback<>() {
-
                 @Override
                 public void completed(final Message<HttpResponse, String> message) {
                     clientEndpoint.releaseAndReuse();

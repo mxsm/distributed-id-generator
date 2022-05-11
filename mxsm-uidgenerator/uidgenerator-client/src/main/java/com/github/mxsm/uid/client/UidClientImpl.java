@@ -25,10 +25,9 @@ public class UidClientImpl implements UidClient {
     private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
         new ThreadFactory() {
             AtomicInteger threadNum = new AtomicInteger(1);
-
             @Override
             public Thread newThread(Runnable run) {
-                Thread thread = new Thread(run, "Async-get-segemnts-thread-" + threadNum.getAndIncrement());
+                Thread thread = new Thread(run, "async-get-segments-thread-" + threadNum.getAndIncrement());
                 thread.setDaemon(false);
                 return thread;
             }

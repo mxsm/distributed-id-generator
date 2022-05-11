@@ -13,12 +13,19 @@ public interface SegmentUidGenerator {
 
 
     /**
-     * Get a unique ID for segment
+     * get a unique ID of segment type
      *
      * @return UID
      * @throws UidGenerateException
      */
     long getUID(String bizCode) throws UidGenerateException;
 
+
+    /**
+     * get segment list
+     * @param bizCode
+     * @param segmentNum
+     * @return
+     */
     List<Segment> getSegments(String bizCode, int segmentNum);
 }
